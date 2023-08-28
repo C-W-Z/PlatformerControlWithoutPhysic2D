@@ -1,7 +1,5 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using Extensions;
 
 public class CheckBox : MonoBehaviour
 {
@@ -27,6 +25,8 @@ public class CheckBox : MonoBehaviour
     [SerializeField] private Vector2 firstRayOffset = Vector2.zero;
     [SerializeField] private Vector2 lastRayOffset = Vector2.zero;
     public Vector2 Center => transform.position;
+
+#region Scene GUI
 
     void OnDrawGizmos()
     {
@@ -55,6 +55,8 @@ public class CheckBox : MonoBehaviour
                 break;
         }
     }
+
+#endregion
 
     public bool Detect(LayerMask layer)
     {
@@ -138,56 +140,28 @@ public class CheckBox : MonoBehaviour
         CheckTypeIsRays();
         direction = -direction;
     }
+
     public void RotateDir(float delta)
     {
         CheckTypeIsRays();
+#if Extentions
         direction.RotateSelf(delta);
+#else
+        Rotate(direction, delta);
+        static void Rotate(Vector2 v, float delta)
+        {
+            v = new Vector2(
+                v.x * Mathf.Cos(delta) - v.y * Mathf.Sin(delta),
+                v.x * Mathf.Sin(delta) + v.y * Mathf.Cos(delta)
+            );
+        }
+#endif
     }
+
     public void NormalizeDir()
     {
         CheckTypeIsRays();
         direction = direction.normalized;
-    }
-
-#endregion
-
-#region Static Utilities
-
-    public static bool DetectAny(CheckBox[] checkboxArray, LayerMask layer)
-    {
-        foreach (var c in checkboxArray)
-            if (c.Detect(layer))
-                return true;
-        return false;
-    }
-    public static bool DetectAny(List<CheckBox> checkboxList, LayerMask layer)
-    {
-        foreach (var c in checkboxList)
-            if (c.Detect(layer))
-                return true;
-        return false;
-    }
-    public static Vector2 GetAnyHitPoint(CheckBox[] checkboxArray, LayerMask layer, Vector2 defaultPos)
-    {
-        Vector2 hitPoint;
-        foreach (var c in checkboxArray)
-        {
-            hitPoint = c.GetHitPoint(layer, defaultPos);
-            if (hitPoint != defaultPos)
-                return hitPoint;
-        }
-        return defaultPos;
-    }
-    public static Vector2 GetAnyHitPoint(List<CheckBox> checkboxList, LayerMask layer, Vector2 defaultPos)
-    {
-        Vector2 hitPoint;
-        foreach (var c in checkboxList)
-        {
-            hitPoint = c.GetHitPoint(layer, defaultPos);
-            if (hitPoint != defaultPos)
-                return hitPoint;
-        }
-        return defaultPos;
     }
 
 #endregion
