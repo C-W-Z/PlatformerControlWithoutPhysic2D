@@ -35,8 +35,6 @@ public class Player : MonoBehaviour
         hitDown  = downRays .Detect(groundLayer);
         hitLeft  = leftRays .Detect(groundLayer);
         hitRight = rightRays.Detect(groundLayer);
-
-        downRays.GetHitPoint(groundLayer, transform.position);
     }
 
 #endregion
@@ -49,7 +47,7 @@ public class Player : MonoBehaviour
 
     private void CalculateRun()
     {
-        float rawH = UnityEngine.Input.GetAxisRaw("Horizontal");
+        float rawH = Input.RawH;
 
         float v;
         if (rawH != 0)
@@ -100,7 +98,7 @@ public class Player : MonoBehaviour
     {
         float v = _velocity.y;
 
-        if (Input.GetButtonDown("Jump") && hitDown)
+        if (Input.JumpDown && hitDown)
             v = jumpSpeed;
 
         if (v > 0 && hitUp)
@@ -163,7 +161,7 @@ public class Player : MonoBehaviour
 
 #endregion
 
-#region Gizmos
+#region Scene GUI
 
     void OnDrawGizmos()
     {
