@@ -5,10 +5,16 @@ public class Player : MonoBehaviour
     [SerializeField] private new Transform transform; // hide the default transform property
     [SerializeField] private Bounds bound;
 
+    private enum TimeType { deltaTime, unscaledDeltaTime }
+    [Header("Time Type")]
+    [SerializeField] private TimeType timeType = TimeType.deltaTime;
+    private float _deltaTime;
+
     private Vector2 _velocity, _lastVelocity;
 
     void Update()
     {
+        _deltaTime = (timeType == TimeType.deltaTime) ? Time.deltaTime : Time.unscaledDeltaTime;
         CollisionDetect();
         CalculateRun();
         SetGravity();
@@ -51,11 +57,11 @@ public class Player : MonoBehaviour
         if (rawH != 0)
         {
             // v = v_0 + a * t
-            v = _lastVelocity.x + rawH * runAcceleration * Time.deltaTime;
+            v = _lastVelocity.x + rawH * runAcceleration * _deltaTime;
             v = Mathf.Clamp(v, -maxRunSpeed, maxRunSpeed);
         }
         else
-            v = Mathf.MoveTowards(_lastVelocity.x, 0, runDecceleration * Time.deltaTime);
+            v = Mathf.MoveTowards(_lastVelocity.x, 0, runDecceleration * _deltaTime);
 
         if (v > 0 && hitRight || v < 0 && hitLeft)
             v = 0;
@@ -75,7 +81,7 @@ public class Player : MonoBehaviour
     private void SetGravity()
     {
         // v = v_0 + a * t
-        float v = _lastVelocity.y - gravity * gravityScale * Time.deltaTime;
+        float v = _lastVelocity.y - gravity * gravityScale * _deltaTime;
 
         v = Mathf.Max(v, -maxFallSpeed);
 
@@ -118,7 +124,7 @@ public class Player : MonoBehaviour
     {
         // calculate the current position and the furthest point we can move if no collision
         Vector2 currentPos = transform.position + bound.center;
-        Vector2 movement = _velocity * Time.deltaTime;
+        Vector2 movement = _velocity * _deltaTime;
         Vector2 furthestPoint = currentPos + movement;
 
         // check furthest movement. If nothing will hit, just move and don't do extra checks
@@ -152,7 +158,7 @@ public class Player : MonoBehaviour
                 }
 
                 // update the actual velocity (for last velocity)
-                _velocity = ((Vector2)transform.position - currentPos + (Vector2)bound.center) / Time.deltaTime;
+                _velocity = ((Vector2)transform.position - currentPos + (Vector2)bound.center) / _deltaTime;
 
                 return;
             }
