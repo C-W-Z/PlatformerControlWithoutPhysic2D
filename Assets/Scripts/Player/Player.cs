@@ -13,13 +13,11 @@ public class Player : MonoBehaviour
         CalculateRun();
         SetGravity();
         CalculateJump(); // possibly override the velocity.y
-        Move();
+        Move(); // actually do the transform update
     }
 
-    void LateUpdate()
-    {
-        _lastVelocity = _velocity;
-    }
+    // update the velocity last frame
+    void LateUpdate() => _lastVelocity = _velocity;
 
 #region Detects
 
@@ -142,6 +140,7 @@ public class Player : MonoBehaviour
 
             if (Physics2D.OverlapBox(posToTry, bound.size, 0, groundLayer))
             {
+                // hit -> move to the position we check last time
                 transform.position = posCanMove - bound.center;
 
                 // we've landed on a corner or hit our head on a ledge. Nudge the player gently
@@ -152,9 +151,13 @@ public class Player : MonoBehaviour
                     transform.position += dir.normalized * movement.magnitude;
                 }
 
+                // update the actual velocity (for last velocity)
+                _velocity = ((Vector2)transform.position - currentPos + (Vector2)bound.center) / Time.deltaTime;
+
                 return;
             }
 
+            // no hit -> we can move to this position
             posCanMove = posToTry;
         }
     }
