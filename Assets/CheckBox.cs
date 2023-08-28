@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEditor;
+using Extensions;
 
 public class CheckBox : MonoBehaviour
 {
@@ -7,20 +9,24 @@ public class CheckBox : MonoBehaviour
     {
         Rectangle,
         Circle,
-        Ray
+        Rays
     }
 
-    [SerializeField] private Transform tf;
+    [SerializeField] private new Transform transform; // hide the default transform property
     [SerializeField] private Type type = Type.Rectangle;
     [SerializeField] private Color color = Color.red;
     [Header("Rectangle")]
-    [SerializeField] private Vector2 size;
+    [SerializeField] private Vector2 size = new(1f, 1f);
     [Header("Circle")]
-    [SerializeField] private float radius;
+    [SerializeField] private float radius = 0.5f;
     [Header("Ray")]
-    [SerializeField] private Vector2 direction;
+    [SerializeField] private Vector2 direction = Vector2.right;
     [SerializeField] private float distance = 1f;
-    public Vector2 Center => tf.position;
+    [Header("Multiple Rays")]
+    [SerializeField] private int rayCount = 1;
+    [SerializeField] private Vector2 firstRayOffset = Vector2.zero;
+    [SerializeField] private Vector2 lastRayOffset = Vector2.zero;
+    public Vector2 Center => transform.position;
 
     void OnDrawGizmos()
     {
@@ -28,42 +34,122 @@ public class CheckBox : MonoBehaviour
         switch (type)
         {
             case Type.Rectangle:
-                Gizmos.DrawWireCube(tf.position, size);
+                Gizmos.matrix = Matrix4x4.TRS(transform.position, transform.rotation, new(1, 1, 1));
+                Gizmos.DrawWireCube(Vector3.zero, size);
                 break;
             case Type.Circle:
-                Gizmos.DrawWireSphere(tf.position, radius);
+                Gizmos.DrawWireSphere(transform.position, radius);
                 break;
-            case Type.Ray:
-                Gizmos.DrawLine(tf.position, tf.position + (Vector3)(direction * distance));
+            case Type.Rays:
+                if (rayCount == 1)
+                    Gizmos.DrawLine(transform.position, transform.position + (Vector3)(direction * distance));
+                else
+                {
+                    for (int i = 0; i <= rayCount - 1; i++)
+                    {
+                        float t = (float)i / (rayCount - 1);
+                        Vector2 pos = transform.position + Vector3.Lerp(firstRayOffset, lastRayOffset, t);
+                        Gizmos.DrawLine(pos, pos + direction * distance);
+                    }
+                }
                 break;
         }
     }
 
     public bool Detect(LayerMask layer)
     {
-        return type switch
+        switch (type)
         {
-            Type.Rectangle => (bool)Physics2D.OverlapBox(tf.position, size, 0, layer),
-            Type.Circle => (bool)Physics2D.OverlapCircle(tf.position, radius, layer),
-            Type.Ray => (bool)Physics2D.Raycast(tf.position, direction, distance, layer),
-            _ => false
-        };
+            case Type.Rectangle:
+                float angle = transform.rotation.z;
+                return Physics2D.OverlapBox(transform.position, size, angle, layer);
+
+            case Type.Circle:
+                return Physics2D.OverlapCircle(transform.position, radius, layer);
+
+            case Type.Rays:
+                // check hit if only one ray
+                if (rayCount == 1)
+                    return Physics2D.Raycast(transform.position, direction, distance, layer);
+                // check if any hit if nultiple rays
+                for (int i = 0; i <= rayCount-1; i++)
+                {
+                    float t = (float)i / (rayCount-1);
+                    Vector2 pos = transform.position + Vector3.Lerp(firstRayOffset, lastRayOffset, t);
+                    if (Physics2D.Raycast(pos, direction, distance, layer))
+                        return true;
+                }
+                // if no any hit
+                return false;
+        }
+        return false;
     }
 
     public Vector2 GetHitPoint(LayerMask layer, Vector2 defaultPos)
     {
-        if (type != Type.Ray)
-            return defaultPos;
-        RaycastHit2D hit = Physics2D.Raycast(tf.position, direction, distance, layer);
-        if (hit.collider != null)
-            return hit.point;
+        CheckTypeIsRays();
+
+        RaycastHit2D hit;
+        if (rayCount == 1)
+        {
+            // get hit point if only one ray
+            hit = Physics2D.Raycast(transform.position, direction, distance, layer);
+            if (hit.collider != null)
+                return hit.point;
+        }
+        else
+        {
+            // get any hit point if nultiple rays
+            for (int i = 0; i <= rayCount-1; i++)
+            {
+                float t = (float)i / (rayCount-1);
+                Vector2 pos = transform.position + Vector3.Lerp(firstRayOffset, lastRayOffset, t);
+                hit = Physics2D.Raycast(pos, direction, distance, layer);
+                if (hit.collider != null)
+                    return hit.point;
+            }
+        }
         return defaultPos;
     }
 
+#region Other Methods
+
+    private void CheckTypeIsRays() =>
+        Debug.Assert(type == Type.Rays, $"The type of the CheckBox '{name}' is not Type.Rays", this);
+
+    // because the direction will not change as the transform.scale/rotation, use these function manually
+    public void SetDir(Vector2 dir)
+    {
+        CheckTypeIsRays();
+        direction = dir;
+    }
     public void FlipDirX()
     {
+        CheckTypeIsRays();
         direction.x = -direction.x;
     }
+    public void FlipDirY()
+    {
+        CheckTypeIsRays();
+        direction.y = -direction.y;
+    }
+    public void FlipDir()
+    {
+        CheckTypeIsRays();
+        direction = -direction;
+    }
+    public void RotateDir(float delta)
+    {
+        CheckTypeIsRays();
+        direction.RotateSelf(delta);
+    }
+    public void NormalizeDir()
+    {
+        CheckTypeIsRays();
+        direction = direction.normalized;
+    }
+
+#endregion
 
 #region Static Utilities
 
@@ -81,7 +167,7 @@ public class CheckBox : MonoBehaviour
                 return true;
         return false;
     }
-    public static Vector2 GetHitPoint(CheckBox[] checkboxArray, LayerMask layer, Vector2 defaultPos)
+    public static Vector2 GetAnyHitPoint(CheckBox[] checkboxArray, LayerMask layer, Vector2 defaultPos)
     {
         Vector2 hitPoint;
         foreach (var c in checkboxArray)
@@ -92,7 +178,7 @@ public class CheckBox : MonoBehaviour
         }
         return defaultPos;
     }
-    public static Vector2 GetHitPoint(List<CheckBox> checkboxList, LayerMask layer, Vector2 defaultPos)
+    public static Vector2 GetAnyHitPoint(List<CheckBox> checkboxList, LayerMask layer, Vector2 defaultPos)
     {
         Vector2 hitPoint;
         foreach (var c in checkboxList)
@@ -106,3 +192,19 @@ public class CheckBox : MonoBehaviour
 
 #endregion
 }
+
+#region Inspector GUI
+
+[CustomEditor(typeof(CheckBox))]
+public class CheckBoxEditor : Editor
+{
+    public override void  OnInspectorGUI ()
+    {
+        DrawDefaultInspector();
+        CheckBox checkbox = (CheckBox)target;
+        if (GUILayout.Button("Normalize Direction"))
+            checkbox.NormalizeDir();
+    }
+}
+
+#endregion
