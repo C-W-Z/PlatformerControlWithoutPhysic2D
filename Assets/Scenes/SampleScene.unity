@@ -1142,9 +1142,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 2048
   upRays: {fileID: 608909426}
-  downRays: {fileID: 0}
-  leftRays: {fileID: 0}
-  rightRays: {fileID: 0}
+  downRays: {fileID: 1249663104}
+  leftRays: {fileID: 111078657}
+  rightRays: {fileID: 2121112258}
   maxRunSpeed: 13
   runAcceleration: 90
   runDecceleration: 60
