@@ -19,6 +19,11 @@ public class Player : MonoBehaviour
         CalculateRun();
         SetGravity();
         CalculateJump(); // possibly override the velocity.y
+        // don't go through ground/wall/ceiling
+        if ((_velocity.x > 0 && hitRight) || (_velocity.x < 0 && hitLeft))
+            _velocity.x = 0;
+        if ((_velocity.y > 0 && hitUp) || (_velocity.y < 0 && hitDown))
+            _velocity.y = 0;
         Move(); // actually do the transform update
     }
 
@@ -39,6 +44,9 @@ public class Player : MonoBehaviour
         hitDown  = downRays .Detect(groundLayer);
         hitLeft  = leftRays .Detect(groundLayer);
         hitRight = rightRays.Detect(groundLayer);
+
+        if (hitDown)
+            _jumpCutting = false;
     }
 
 #endregion
@@ -63,9 +71,6 @@ public class Player : MonoBehaviour
         else
             v = Mathf.MoveTowards(_lastVelocity.x, 0, runDecceleration * _deltaTime);
 
-        if (v > 0 && hitRight || v < 0 && hitLeft)
-            v = 0;
-
         _velocity.x = v;
     }
 
@@ -75,18 +80,18 @@ public class Player : MonoBehaviour
 
     [Header("Gravity")]
     [SerializeField] private float gravity = 80f;
-    private float gravityScale = 1;
+    private const float gravityScale = 1;
     [SerializeField] private float maxFallSpeed = 40f;
 
     private void SetGravity()
     {
+        float scale = gravityScale;
+        if (_jumpCutting)
+            scale *= jumpCutGravityMult;
         // v = v_0 + a * t
-        float v = _lastVelocity.y - gravity * gravityScale * _deltaTime;
+        float v = _lastVelocity.y - gravity * scale * _deltaTime;
 
         v = Mathf.Max(v, -maxFallSpeed);
-
-        if (v < 0 && hitDown)
-            v = 0;
 
         _velocity.y = v;
     }
@@ -97,16 +102,25 @@ public class Player : MonoBehaviour
 
     [Header("Jump")]
     [SerializeField] private float jumpSpeed = 30f;
+    [SerializeField] private float jumpCutSpeedMult = 0.5f;
+    [SerializeField] private float jumpCutGravityMult = 2f;
+    private bool _jumpCutting = false;
 
     private void CalculateJump()
     {
         float v = _velocity.y;
 
         if (Input.JumpDown && hitDown)
+        {
             v = jumpSpeed;
+            _jumpCutting = false;
+        }
 
-        if (v > 0 && hitUp)
-            v = 0;
+        if (!hitDown && Input.JumpUp && !_jumpCutting && v > 0)
+        {
+            _jumpCutting = true;
+            v *= jumpCutSpeedMult;
+        }
 
         _velocity.y = v;
     }

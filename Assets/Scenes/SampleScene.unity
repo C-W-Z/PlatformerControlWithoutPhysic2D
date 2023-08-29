@@ -168,15 +168,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   transform: {fileID: 111078656}
-  type: 0
+  type: 2
   color: {r: 1, g: 0, b: 0, a: 1}
   size: {x: 0.1, y: 0.85}
   radius: 0
   direction: {x: -1, y: 0}
   distance: 0.1
   rayCount: 5
-  firstRayOffset: {x: 0, y: -0.45}
-  lastRayOffset: {x: 0, y: 0.45}
+  firstRayOffset: {x: 0, y: -0.4}
+  lastRayOffset: {x: 0, y: 0.4}
 --- !u!1 &237957288
 GameObject:
   m_ObjectHideFlags: 0
@@ -663,7 +663,7 @@ MonoBehaviour:
   transform: {fileID: 608909425}
   type: 0
   color: {r: 1, g: 0, b: 0, a: 1}
-  size: {x: 0.9, y: 0.1}
+  size: {x: 0.95, y: 0.1}
   radius: 0
   direction: {x: 0, y: 1}
   distance: 0.1
@@ -948,7 +948,7 @@ MonoBehaviour:
   transform: {fileID: 1249663103}
   type: 0
   color: {r: 1, g: 0, b: 0, a: 1}
-  size: {x: 0.9, y: 0.1}
+  size: {x: 0.95, y: 0.1}
   radius: 0
   direction: {x: 0, y: -1}
   distance: 0.1
@@ -1489,6 +1489,8 @@ MonoBehaviour:
   gravity: 80
   maxFallSpeed: 30
   jumpSpeed: 30
+  jumpCutSpeedMult: 0.5
+  jumpCutGravityMult: 2
   maxCheckColliderCount: 10
 --- !u!1 &2121112256
 GameObject:
@@ -1535,15 +1537,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   transform: {fileID: 2121112257}
-  type: 0
+  type: 2
   color: {r: 1, g: 0, b: 0, a: 1}
   size: {x: 0.1, y: 0.85}
   radius: 0
   direction: {x: 1, y: 0}
   distance: 0.1
   rayCount: 5
-  firstRayOffset: {x: 0, y: -0.45}
-  lastRayOffset: {x: 0, y: 0.45}
+  firstRayOffset: {x: 0, y: -0.4}
+  lastRayOffset: {x: 0, y: 0.4}
 --- !u!1 &2135302987
 GameObject:
   m_ObjectHideFlags: 0
