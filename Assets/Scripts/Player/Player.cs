@@ -137,7 +137,8 @@ public class Player : MonoBehaviour
     {
         float v = _velocity.y;
 
-        if ((_hitDown && timer.JumpBuffer > 0) || (Input.JumpDown && _canCoyote && timer.LastOnGround > 0))
+        if ((_hitDown && (Input.JumpDown || timer.JumpBuffer > 0)) ||
+            (Input.JumpDown && _canCoyote && timer.LastOnGround > 0))
         {
             v = jumpSpeed;
             _jumpCutting = false;
@@ -170,8 +171,7 @@ public class Player : MonoBehaviour
         Vector2 furthestPoint = currentPos + movement;
 
         // check furthest movement. If nothing will hit, just move and don't do extra checks
-        Collider2D hit = Physics2D.OverlapBox(furthestPoint, bound.size, 0, groundLayer);
-        if (hit == null)
+        if (!Physics2D.OverlapBox(furthestPoint, bound.size, 0, groundLayer))
         {
             transform.position = furthestPoint;
             return;
@@ -190,14 +190,6 @@ public class Player : MonoBehaviour
             {
                 // hit -> move to the position we check last time
                 transform.position = posCanMove - bound.center;
-
-                // we've landed on a corner or hit our head on a ledge. Nudge the player gently
-                if (i == 1)
-                {
-                    // if (_velocity.y < 0) _velocity.y = 0;
-                    Vector3 dir = (Vector3)currentPos - hit.transform.position;
-                    transform.position += dir.normalized * movement.magnitude;
-                }
 
                 // update the actual velocity (for last velocity)
                 _velocity = ((Vector2)transform.position - currentPos + (Vector2)bound.center) / _deltaTime;
