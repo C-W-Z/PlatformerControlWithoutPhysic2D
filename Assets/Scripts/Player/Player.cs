@@ -15,20 +15,33 @@ public class Player : MonoBehaviour
     void Update()
     {
         _deltaTime = (timeType == TimeType.deltaTime) ? Time.deltaTime : Time.unscaledDeltaTime;
+        UpdateTimer();
         CollisionDetect();
         CalculateRun();
         SetGravity();
         CalculateJump(); // possibly override the velocity.y
-        // don't go through ground/wall/ceiling
-        if ((_velocity.x > 0 && hitRight) || (_velocity.x < 0 && hitLeft))
-            _velocity.x = 0;
-        if ((_velocity.y > 0 && hitUp) || (_velocity.y < 0 && hitDown))
-            _velocity.y = 0;
+        RestrictVelocity(); // don't go through ground/wall/ceiling
         Move(); // actually do the transform update
     }
 
     // update the velocity last frame
     void LateUpdate() => _lastVelocity = _velocity;
+
+#region Timer
+
+    private struct Timer
+    {
+        public float JumpBuffer;
+    }
+    private Timer timer;
+    private void UpdateTimer()
+    {
+        timer.JumpBuffer -= _deltaTime;
+        if (Input.JumpDown)
+            timer.JumpBuffer = jumpBufferTime;
+    }
+
+#endregion
 
 #region Detects
 
@@ -105,12 +118,13 @@ public class Player : MonoBehaviour
     [SerializeField] private float jumpCutSpeedMult = 0.5f;
     [SerializeField] private float jumpCutGravityMult = 2f;
     private bool _jumpCutting = false;
+    [SerializeField] private float jumpBufferTime = 0.1f;
 
     private void CalculateJump()
     {
         float v = _velocity.y;
 
-        if (Input.JumpDown && hitDown)
+        if (timer.JumpBuffer > 0 && hitDown)
         {
             v = jumpSpeed;
             _jumpCutting = false;
@@ -182,11 +196,19 @@ public class Player : MonoBehaviour
         }
     }
 
+    private void RestrictVelocity()
+    {
+        if ((_velocity.x > 0 && hitRight) || (_velocity.x < 0 && hitLeft))
+            _velocity.x = 0;
+        if ((_velocity.y > 0 && hitUp) || (_velocity.y < 0 && hitDown))
+            _velocity.y = 0;
+    }
+
 #endregion
 
 #region Scene GUI
 
-    void OnDrawGizmos()
+    void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.green;
         Gizmos.DrawWireCube(transform.position + bound.center, bound.size);
