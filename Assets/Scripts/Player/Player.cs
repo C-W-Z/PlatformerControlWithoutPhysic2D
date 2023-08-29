@@ -61,12 +61,29 @@ public class Player : MonoBehaviour
     private bool _hitUp, _hitDown, _hitLeft, _hitRight;
     private bool _lastHitDown;
 
+    [SerializeField] private CheckBox leftBottomRay, rightBottomRay;
+    [SerializeField] private CheckBox bottomLeftRay, bottomRightRay;
+    [SerializeField] private CheckBox leftTopRay, rightTopRay;
+    [SerializeField] private CheckBox topLeftRay, topRightRay;
+
+    private bool _detectLeftBottom, _detectRightBottom, _detectLeftTop, _detectRightTop;
+    private bool _detectBottomLeft, _detectBottomRight, _detectTopLeft, _detectTopRight;
+
     private void CollisionDetect()
     {
         _hitUp    = upRays   .Detect(groundLayer);
         _hitDown  = downRays .Detect(groundLayer);
         _hitLeft  = leftRays .Detect(groundLayer);
         _hitRight = rightRays.Detect(groundLayer);
+
+        _detectLeftBottom = leftBottomRay.Detect(groundLayer);
+        _detectRightBottom = rightBottomRay.Detect(groundLayer);
+        _detectBottomLeft = bottomLeftRay.Detect(groundLayer);
+        _detectBottomRight = bottomRightRay.Detect(groundLayer);
+        _detectLeftTop = leftTopRay.Detect(groundLayer);
+        _detectRightTop = rightTopRay.Detect(groundLayer);
+        _detectTopLeft = topLeftRay.Detect(groundLayer);
+        _detectTopRight = topRightRay.Detect(groundLayer);
 
         if (_hitDown)
         {
@@ -178,6 +195,8 @@ public class Player : MonoBehaviour
     [SerializeField, Tooltip("The max iterations of finding a closer point when the future position to move has other colliders.\nRaising this value increases collision accuracy at the cost of performance.")]
     private int maxCheckColliderCount = 10;
 
+    [SerializeField] private float cornerCorrectDisplacement = 0.1f;
+
     // we cast our bounds before moving to avoid future collisions
     private void Move()
     {
@@ -191,6 +210,39 @@ public class Player : MonoBehaviour
         {
             transform.position = furthestPoint;
             return;
+        }
+
+        /* corner corrections */
+        // almost land on platform -> push forward a little bit
+        if (_detectLeftBottom && !_hitDown && !_hitLeft && Input.RawH < 0)
+            transform.position += cornerCorrectDisplacement * new Vector3(-1, 2, 0).normalized;
+        if (_detectRightBottom && !_hitDown && !_hitRight  && Input.RawH > 0)
+            transform.position += cornerCorrectDisplacement * new Vector3(1, 2, 0).normalized;
+        // almost jumped onto the platform -> help player to jump on it
+        if (_detectBottomLeft && !_hitLeft && _velocity.y <= 0 && Input.RawH < 0)
+            transform.position += cornerCorrectDisplacement * new Vector3(-19, 1, 0).normalized;
+        if (_detectBottomRight && !_hitRight && _velocity.y <= 0 && Input.RawH > 0)
+            transform.position += cornerCorrectDisplacement * new Vector3(19, 1, 0).normalized;
+        // if hit head on corner -> push forward a little bit
+        if (_detectLeftTop && !_hitUp && Input.RawH >= 0 && _velocity.y > 0)
+            transform.position += cornerCorrectDisplacement * Vector3.right;
+        if (_detectRightTop && !_hitUp && Input.RawH <= 0 && _velocity.y > 0)
+            transform.position += cornerCorrectDisplacement * Vector3.left;
+        // prevent stuck in corner
+        if ((_detectTopLeft && !_hitLeft) || (_detectTopRight && !_hitRight))
+            transform.position += cornerCorrectDisplacement * Vector3.down;
+
+        // if has done some corner correction
+        if (currentPos != (Vector2)(transform.position + bound.center))
+        {
+            // update current position, furthest point and recalculate
+            currentPos = transform.position + bound.center;
+            furthestPoint = currentPos + movement;
+            if (!Physics2D.OverlapBox(furthestPoint, bound.size, 0, groundLayer))
+            {
+                transform.position = furthestPoint;
+                return;
+            }
         }
 
         // otherwise increment away from current pos, see what closest position we can move to
@@ -230,7 +282,7 @@ public class Player : MonoBehaviour
 
 #region Scene GUI
 
-    void OnDrawGizmosSelected()
+    void OnDrawGizmos()
     {
         Gizmos.color = Color.green;
         Gizmos.DrawWireCube(transform.position + bound.center, bound.size);
