@@ -175,8 +175,8 @@ MonoBehaviour:
   direction: {x: -1, y: 0}
   distance: 0.1
   rayCount: 5
-  firstRayOffset: {x: 0, y: -0.35}
-  lastRayOffset: {x: 0, y: 0.35}
+  firstRayOffset: {x: 0, y: -0.3}
+  lastRayOffset: {x: 0, y: 0.3}
 --- !u!1 &237957288
 GameObject:
   m_ObjectHideFlags: 0
@@ -809,7 +809,7 @@ MonoBehaviour:
   transform: {fileID: 608909425}
   type: 0
   color: {r: 1, g: 0, b: 0, a: 1}
-  size: {x: 0.9, y: 0.2}
+  size: {x: 0.85, y: 0.2}
   radius: 0
   direction: {x: 0, y: 1}
   distance: 0.1
@@ -1094,7 +1094,7 @@ MonoBehaviour:
   transform: {fileID: 1249663103}
   type: 0
   color: {r: 1, g: 0, b: 0, a: 1}
-  size: {x: 0.9, y: 0.2}
+  size: {x: 0.85, y: 0.2}
   radius: 0
   direction: {x: 0, y: -1}
   distance: 0.1
@@ -1631,7 +1631,8 @@ MonoBehaviour:
   rightRays: {fileID: 2121112258}
   maxRunSpeed: 13
   runAcceleration: 90
-  runDecceleration: 60
+  runDecceleration: 90
+  jumpApexBonusMoveSpeed: 2
   gravity: 80
   maxFallSpeed: 30
   jumpSpeed: 30
@@ -1639,6 +1640,8 @@ MonoBehaviour:
   jumpCutGravityMult: 2
   jumpBufferTime: 0.1
   coyoteTime: 0.1
+  jumpApexSpeedThreshold: 0.5
+  jumpApexGravityMult: 0.5
   maxCheckColliderCount: 10
 --- !u!1 &2121112256
 GameObject:
@@ -1692,8 +1695,8 @@ MonoBehaviour:
   direction: {x: 1, y: 0}
   distance: 0.1
   rayCount: 5
-  firstRayOffset: {x: 0, y: -0.35}
-  lastRayOffset: {x: 0, y: 0.35}
+  firstRayOffset: {x: 0, y: -0.3}
+  lastRayOffset: {x: 0, y: 0.3}
 --- !u!1 &2135302987
 GameObject:
   m_ObjectHideFlags: 0

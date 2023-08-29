@@ -17,6 +17,7 @@ public class Player : MonoBehaviour
         _deltaTime = (timeType == TimeType.deltaTime) ? Time.deltaTime : Time.unscaledDeltaTime;
         CollisionDetect();
         UpdateTimer();
+        CheckJumpApex(); // affect run speed and gravity
         CalculateRun();
         SetGravity();
         CalculateJump(); // possibly override the velocity.y
@@ -68,9 +69,11 @@ public class Player : MonoBehaviour
         _hitRight = rightRays.Detect(groundLayer);
 
         if (_hitDown)
+        {
             _jumpCutting = false;
-        if (!_lastHitDown && _hitDown) // first frame grounded
-            _canCoyote = true;
+            if (!_lastHitDown)
+                _jumping = false;
+        }
     }
 
 #endregion
@@ -80,6 +83,7 @@ public class Player : MonoBehaviour
     [Header("Run")]
     [SerializeField] private float maxRunSpeed = 13f;
     [SerializeField] private float runAcceleration = 90f, runDecceleration = 60f;
+    [SerializeField] private float jumpApexBonusMoveSpeed = 2f;
 
     private void CalculateRun()
     {
@@ -91,6 +95,9 @@ public class Player : MonoBehaviour
             // v = v_0 + a * t
             v = _lastVelocity.x + rawH * runAcceleration * _deltaTime;
             v = Mathf.Clamp(v, -maxRunSpeed, maxRunSpeed);
+            // bonus speed at jump apex
+            if (_atJumpApex)
+                v += rawH * jumpApexBonusMoveSpeed;
         }
         else
             v = Mathf.MoveTowards(_lastVelocity.x, 0, runDecceleration * _deltaTime);
@@ -110,7 +117,9 @@ public class Player : MonoBehaviour
     private void SetGravity()
     {
         float scale = gravityScale;
-        if (_jumpCutting)
+        if (_atJumpApex)
+            scale *= jumpApexGravityMult;
+        else if (_jumpCutting)
             scale *= jumpCutGravityMult;
         // v = v_0 + a * t
         float v = _lastVelocity.y - gravity * scale * _deltaTime;
@@ -131,18 +140,25 @@ public class Player : MonoBehaviour
     private bool _jumpCutting = false;
     [SerializeField] private float jumpBufferTime = 0.1f;
     [SerializeField] private float coyoteTime = 0.1f;
-    private bool _canCoyote = true;
+    private bool _jumping = false;
+    [SerializeField] private float jumpApexSpeedThreshold = 0.5f;
+    [SerializeField] private float jumpApexGravityMult = 0.5f;
+    private bool _atJumpApex = false;
+
+    private void CheckJumpApex() =>
+        _atJumpApex = Mathf.Abs(_lastVelocity.y) <= jumpApexSpeedThreshold;
 
     private void CalculateJump()
     {
         float v = _velocity.y;
 
-        if ((_hitDown && (Input.JumpDown || timer.JumpBuffer > 0)) ||
-            (Input.JumpDown && _canCoyote && timer.LastOnGround > 0))
+        if (!_hitUp &&
+            ((_hitDown && timer.JumpBuffer > 0) ||
+            (Input.JumpDown && !_jumping && timer.LastOnGround > 0)))
         {
             v = jumpSpeed;
+            _jumping = true;
             _jumpCutting = false;
-            _canCoyote = false;
         }
 
         if (!_hitDown && Input.JumpUp && !_jumpCutting && v > 0)
