@@ -161,7 +161,7 @@ public class Player : MonoBehaviour
             _jumpCutting = false;
         }
 
-        if (!_hitDown && Input.JumpUp && !_jumpCutting && v > 0)
+        if (!_hitDown && Input.JumpUp && !_jumpCutting && _jumping)
         {
             _jumpCutting = true;
             v *= jumpCutSpeedMult;
