@@ -34,6 +34,7 @@ public class Player : MonoBehaviour
 
 #region Timer
 
+    [System.Serializable]
     private struct Timer
     {
         public float JumpBuffer;
@@ -61,13 +62,19 @@ public class Player : MonoBehaviour
     private bool _hitUp, _hitDown, _hitLeft, _hitRight;
     private bool _lastHitDown;
 
-    [SerializeField] private CheckBox leftBottomRay, rightBottomRay;
-    [SerializeField] private CheckBox bottomLeftRay, bottomRightRay;
-    [SerializeField] private CheckBox leftTopRay, rightTopRay;
-    [SerializeField] private CheckBox topLeftRay, topRightRay;
+    [System.Serializable]
+    private struct CornerRay
+    {
+        [SerializeField] private CheckBox outer, inner;
+        public bool Detected { get; private set; }
+        public void Detect(LayerMask layer) =>
+            Detected = outer.Detect(layer) && !inner.Detect(layer);
+    }
 
-    private bool _detectLeftBottom, _detectRightBottom, _detectLeftTop, _detectRightTop;
-    private bool _detectBottomLeft, _detectBottomRight, _detectTopLeft, _detectTopRight;
+    [SerializeField] private CornerRay leftBottomRay, rightBottomRay;
+    [SerializeField] private CornerRay bottomLeftRay, bottomRightRay;
+    [SerializeField] private CornerRay leftTopRay, rightTopRay;
+    [SerializeField] private CornerRay topLeftRay, topRightRay;
 
     private void CollisionDetect()
     {
@@ -76,14 +83,14 @@ public class Player : MonoBehaviour
         _hitLeft  = leftRays .Detect(groundLayer);
         _hitRight = rightRays.Detect(groundLayer);
 
-        _detectLeftBottom = leftBottomRay.Detect(groundLayer);
-        _detectRightBottom = rightBottomRay.Detect(groundLayer);
-        _detectBottomLeft = bottomLeftRay.Detect(groundLayer);
-        _detectBottomRight = bottomRightRay.Detect(groundLayer);
-        _detectLeftTop = leftTopRay.Detect(groundLayer);
-        _detectRightTop = rightTopRay.Detect(groundLayer);
-        _detectTopLeft = topLeftRay.Detect(groundLayer);
-        _detectTopRight = topRightRay.Detect(groundLayer);
+        leftBottomRay.Detect(groundLayer);
+        rightBottomRay.Detect(groundLayer);
+        bottomLeftRay.Detect(groundLayer);
+        bottomRightRay.Detect(groundLayer);
+        leftTopRay.Detect(groundLayer);
+        rightTopRay.Detect(groundLayer);
+        topLeftRay.Detect(groundLayer);
+        topRightRay.Detect(groundLayer);
 
         if (_hitDown)
         {
@@ -163,7 +170,7 @@ public class Player : MonoBehaviour
     private bool _atJumpApex = false;
 
     private void CheckJumpApex() =>
-        _atJumpApex = Mathf.Abs(_lastVelocity.y) <= jumpApexSpeedThreshold;
+        _atJumpApex = _jumping && Mathf.Abs(_lastVelocity.y) <= jumpApexSpeedThreshold;
 
     private void CalculateJump()
     {
@@ -200,6 +207,13 @@ public class Player : MonoBehaviour
     // we cast our bounds before moving to avoid future collisions
     private void Move()
     {
+        /* corner corrections */
+        // if hit head on corner -> push forward a little bit
+        if (leftTopRay.Detected && Input.RawH >= 0 && _velocity.y > 0)
+            transform.position += cornerCorrectDisplacement * Vector3.right;
+        if (rightTopRay.Detected && Input.RawH <= 0 && _velocity.y > 0)
+            transform.position += cornerCorrectDisplacement * Vector3.left;
+
         // calculate the current position and the furthest point we can move if no collision
         Vector2 currentPos = transform.position + bound.center;
         Vector2 movement = _velocity * _deltaTime;
@@ -214,25 +228,20 @@ public class Player : MonoBehaviour
 
         /* corner corrections */
         // almost land on platform -> push forward a little bit
-        if (_detectLeftBottom && !_hitDown && !_hitLeft && Input.RawH < 0)
+        if (leftBottomRay.Detected && !_hitLeft && Input.RawH < 0)
             transform.position += cornerCorrectDisplacement * new Vector3(-1, 2, 0).normalized;
-        if (_detectRightBottom && !_hitDown && !_hitRight  && Input.RawH > 0)
+        if (rightBottomRay.Detected && !_hitRight  && Input.RawH > 0)
             transform.position += cornerCorrectDisplacement * new Vector3(1, 2, 0).normalized;
         // almost jumped onto the platform -> help player to jump on it
-        if (_detectBottomLeft && !_hitLeft && _velocity.y <= 0 && Input.RawH < 0)
+        if (bottomLeftRay.Detected && _velocity.y <= 0 && Input.RawH < 0)
             transform.position += cornerCorrectDisplacement * new Vector3(-19, 1, 0).normalized;
-        if (_detectBottomRight && !_hitRight && _velocity.y <= 0 && Input.RawH > 0)
+        if (bottomRightRay.Detected && _velocity.y <= 0 && Input.RawH > 0)
             transform.position += cornerCorrectDisplacement * new Vector3(19, 1, 0).normalized;
-        // if hit head on corner -> push forward a little bit
-        if (_detectLeftTop && !_hitUp && Input.RawH >= 0 && _velocity.y > 0)
-            transform.position += cornerCorrectDisplacement * Vector3.right;
-        if (_detectRightTop && !_hitUp && Input.RawH <= 0 && _velocity.y > 0)
-            transform.position += cornerCorrectDisplacement * Vector3.left;
         // prevent stuck in corner
-        if ((_detectTopLeft && !_hitLeft) || (_detectTopRight && !_hitRight))
+        if (topLeftRay.Detected || topRightRay.Detected)
             transform.position += cornerCorrectDisplacement * Vector3.down;
 
-        // if has done some corner correction
+        // if have done some corner correction
         if (currentPos != (Vector2)(transform.position + bound.center))
         {
             // update current position, furthest point and recalculate
