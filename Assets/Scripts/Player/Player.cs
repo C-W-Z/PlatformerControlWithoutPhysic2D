@@ -15,8 +15,8 @@ public class Player : MonoBehaviour
     void Update()
     {
         _deltaTime = (timeType == TimeType.deltaTime) ? Time.deltaTime : Time.unscaledDeltaTime;
-        UpdateTimer();
         CollisionDetect();
+        UpdateTimer();
         CalculateRun();
         SetGravity();
         CalculateJump(); // possibly override the velocity.y
@@ -25,20 +25,28 @@ public class Player : MonoBehaviour
     }
 
     // update the velocity last frame
-    void LateUpdate() => _lastVelocity = _velocity;
+    void LateUpdate()
+    {
+        _lastVelocity = _velocity;
+        _lastHitDown = _hitDown;
+    }
 
 #region Timer
 
     private struct Timer
     {
         public float JumpBuffer;
+        public float LastOnGround;
     }
     private Timer timer;
     private void UpdateTimer()
     {
-        timer.JumpBuffer -= _deltaTime;
+        timer.JumpBuffer   -= _deltaTime;
+        timer.LastOnGround -= _deltaTime;
         if (Input.JumpDown)
             timer.JumpBuffer = jumpBufferTime;
+        if (_hitDown)
+            timer.LastOnGround = coyoteTime;
     }
 
 #endregion
@@ -49,17 +57,20 @@ public class Player : MonoBehaviour
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private CheckBox upRays, downRays, leftRays, rightRays;
 
-    private bool hitUp, hitDown, hitLeft, hitRight;
+    private bool _hitUp, _hitDown, _hitLeft, _hitRight;
+    private bool _lastHitDown;
 
     private void CollisionDetect()
     {
-        hitUp    = upRays   .Detect(groundLayer);
-        hitDown  = downRays .Detect(groundLayer);
-        hitLeft  = leftRays .Detect(groundLayer);
-        hitRight = rightRays.Detect(groundLayer);
+        _hitUp    = upRays   .Detect(groundLayer);
+        _hitDown  = downRays .Detect(groundLayer);
+        _hitLeft  = leftRays .Detect(groundLayer);
+        _hitRight = rightRays.Detect(groundLayer);
 
-        if (hitDown)
+        if (_hitDown)
             _jumpCutting = false;
+        if (!_lastHitDown && _hitDown) // first frame grounded
+            _canCoyote = true;
     }
 
 #endregion
@@ -119,18 +130,21 @@ public class Player : MonoBehaviour
     [SerializeField] private float jumpCutGravityMult = 2f;
     private bool _jumpCutting = false;
     [SerializeField] private float jumpBufferTime = 0.1f;
+    [SerializeField] private float coyoteTime = 0.1f;
+    private bool _canCoyote = true;
 
     private void CalculateJump()
     {
         float v = _velocity.y;
 
-        if (timer.JumpBuffer > 0 && hitDown)
+        if ((_hitDown && timer.JumpBuffer > 0) || (Input.JumpDown && _canCoyote && timer.LastOnGround > 0))
         {
             v = jumpSpeed;
             _jumpCutting = false;
+            _canCoyote = false;
         }
 
-        if (!hitDown && Input.JumpUp && !_jumpCutting && v > 0)
+        if (!_hitDown && Input.JumpUp && !_jumpCutting && v > 0)
         {
             _jumpCutting = true;
             v *= jumpCutSpeedMult;
@@ -180,7 +194,7 @@ public class Player : MonoBehaviour
                 // we've landed on a corner or hit our head on a ledge. Nudge the player gently
                 if (i == 1)
                 {
-                    if (_velocity.y < 0) _velocity.y = 0;
+                    // if (_velocity.y < 0) _velocity.y = 0;
                     Vector3 dir = (Vector3)currentPos - hit.transform.position;
                     transform.position += dir.normalized * movement.magnitude;
                 }
@@ -198,9 +212,9 @@ public class Player : MonoBehaviour
 
     private void RestrictVelocity()
     {
-        if ((_velocity.x > 0 && hitRight) || (_velocity.x < 0 && hitLeft))
+        if ((_velocity.x > 0 && _hitRight) || (_velocity.x < 0 && _hitLeft))
             _velocity.x = 0;
-        if ((_velocity.y > 0 && hitUp) || (_velocity.y < 0 && hitDown))
+        if ((_velocity.y > 0 && _hitUp) || (_velocity.y < 0 && _hitDown))
             _velocity.y = 0;
     }
 
