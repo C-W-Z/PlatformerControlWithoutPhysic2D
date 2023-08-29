@@ -25,6 +25,7 @@ public class CheckBox : MonoBehaviour
     [SerializeField] private Vector2 firstRayOffset = Vector2.zero;
     [SerializeField] private Vector2 lastRayOffset = Vector2.zero;
     public Vector2 Center => transform.position;
+    public Vector2 Size => size;
 
 #region Scene GUI
 
@@ -63,7 +64,7 @@ public class CheckBox : MonoBehaviour
         switch (type)
         {
             case Type.Rectangle:
-                float angle = transform.rotation.z;
+                float angle = transform.eulerAngles.z;
                 return Physics2D.OverlapBox(transform.position, size, angle, layer);
 
             case Type.Circle:
