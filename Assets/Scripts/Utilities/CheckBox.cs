@@ -1,5 +1,7 @@
 using UnityEngine;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 
 public class CheckBox : MonoBehaviour
 {
@@ -170,6 +172,7 @@ public class CheckBox : MonoBehaviour
 
 #region Inspector GUI
 
+#if UNITY_EDITOR
 [CustomEditor(typeof(CheckBox))]
 public class CheckBoxEditor : Editor
 {
@@ -181,5 +184,6 @@ public class CheckBoxEditor : Editor
             checkbox.NormalizeDir();
     }
 }
+#endif
 
 #endregion

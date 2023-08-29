@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class Player : MonoBehaviour
@@ -12,8 +13,18 @@ public class Player : MonoBehaviour
 
     private Vector2 _velocity, _lastVelocity;
 
+    // wait for the collider build
+    private bool _active = false;
+    void Start() => StartCoroutine(Active());
+    private IEnumerator Active()
+    {
+        yield return new WaitForSecondsRealtime(0.5f);
+        _active = true;
+    }
+
     void Update()
     {
+        if (!_active) return;
         _deltaTime = (timeType == TimeType.deltaTime) ? Time.deltaTime : Time.unscaledDeltaTime;
         CollisionDetect();
         UpdateTimer();
@@ -176,7 +187,7 @@ public class Player : MonoBehaviour
     {
         float v = _velocity.y;
 
-        if (!_hitUp &&
+        if ((!_hitUp || leftTopRay.Detected || rightTopRay.Detected) &&
             ((_hitDown && timer.JumpBuffer > 0) ||
             (Input.JumpDown && !_jumping && timer.LastOnGround > 0)))
         {
@@ -283,7 +294,7 @@ public class Player : MonoBehaviour
     {
         if ((_velocity.x > 0 && _hitRight) || (_velocity.x < 0 && _hitLeft))
             _velocity.x = 0;
-        if ((_velocity.y > 0 && _hitUp) || (_velocity.y < 0 && _hitDown))
+        if ((_velocity.y > 0 && _hitUp && !leftTopRay.Detected && !rightTopRay.Detected) || (_velocity.y < 0 && _hitDown))
             _velocity.y = 0;
     }
 
